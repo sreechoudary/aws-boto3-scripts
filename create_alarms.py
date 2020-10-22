@@ -1,6 +1,4 @@
 import boto3
-from collections import defaultdict
-from botocore.config import Config
 regions = [
     'ca-central-1',
     'ap-southeast-2',
@@ -25,7 +23,6 @@ for region in regions:
 
     paginator = cloudwatch.get_paginator('list_metrics')
     
-    ec2info = defaultdict()
     for instance in running_instances:
         for tag in instance.tags:
             if 'Name'in tag['Key']:
@@ -43,6 +40,63 @@ for region in regions:
             ActionsEnabled=True,
             AlarmActions=[sns_topic_arn],
             AlarmDescription='Alarm when server CPU exceeds 70%',
+            Dimensions=[
+                {
+                'Name': 'InstanceId',
+                'Value': instance.id
+                },
+            ]
+        )
+        cloudwatch.put_metric_alarm(
+            AlarmName='%s_StatusCheckFailed_System' % name,
+            ComparisonOperator='GreaterThanOrEqualToThreshold',
+            EvaluationPeriods=1,
+            MetricName='StatusCheckFailed_System',
+            Namespace='AWS/EC2',
+            Period=60,
+            Statistic='Average',
+            Threshold=1.0,
+            ActionsEnabled=True,
+            AlarmActions=[sns_topic_arn],
+            AlarmDescription='Alarm when StatusCheckFailed_System',
+            Dimensions=[
+                {
+                'Name': 'InstanceId',
+                'Value': instance.id
+                },
+            ]
+        )
+        cloudwatch.put_metric_alarm(
+            AlarmName='%s_StatusCheckFailed_Instance' % name,
+            ComparisonOperator='GreaterThanOrEqualToThreshold',
+            EvaluationPeriods=1,
+            MetricName='StatusCheckFailed_Instance',
+            Namespace='AWS/EC2',
+            Period=60,
+            Statistic='Average',
+            Threshold=1.0,
+            ActionsEnabled=True,
+            AlarmActions=[sns_topic_arn],
+            AlarmDescription='Alarm when StatusCheckFailed_Instance',
+            Dimensions=[
+                {
+                'Name': 'InstanceId',
+                'Value': instance.id
+                },
+            ]
+        )
+        cloudwatch.put_metric_alarm(
+            AlarmName='%s_StatusCheckFailed' % name,
+            ComparisonOperator='GreaterThanOrEqualToThreshold',
+            EvaluationPeriods=1,
+            MetricName='StatusCheckFailed',
+            Namespace='AWS/EC2',
+            Period=60,
+            Statistic='Average',
+            Threshold=1.0,
+            ActionsEnabled=True,
+            AlarmActions=[sns_topic_arn],
+            AlarmDescription='Alarm when StatusCheckFailed',
             Dimensions=[
                 {
                 'Name': 'InstanceId',
