@@ -12,6 +12,7 @@ regions = [
 ]
 session = boto3.Session(profile_name='default')
 for region in regions:
+    print('Processing region : ' + region)
     ec2 = session.resource('ec2', region)
     cloudwatch = session.client('cloudwatch', region)
     sns = session.resource('sns', region)
@@ -29,17 +30,9 @@ for region in regions:
         for tag in instance.tags:
             if 'Name'in tag['Key']:
                 name = tag['Value']
-        # Add instance info to a dictionary         
-        ec2info[instance.id] = {
-            'Name': name,
-            'Type': instance.instance_type,
-            'Image ID': instance.image_id
-        }
-
-    for instance_id, instance in ec2info.items():
-        print('Id: ' + instance_id)
+        print('Id: ' + instance.id)
         cloudwatch.put_metric_alarm(
-            AlarmName='%s_CPU_Utilization' % instance['Name'],
+            AlarmName='%s_CPU_Utilization' % name,
             ComparisonOperator='GreaterThanThreshold',
             EvaluationPeriods=1,
             MetricName='CPUUtilization',
@@ -53,12 +46,12 @@ for region in regions:
             Dimensions=[
                 {
                 'Name': 'InstanceId',
-                'Value': instance_id
+                'Value': instance.id
                 },
             ]
         )
         cloudwatch.put_metric_alarm(
-            AlarmName='%s_Memory_Utilization' % instance['Name'],
+            AlarmName='%s_Memory_Utilization' % name,
             ComparisonOperator='GreaterThanThreshold',
             EvaluationPeriods=1,
             MetricName='mem_used_percent',
@@ -72,24 +65,24 @@ for region in regions:
             Dimensions=[
                 {
                 'Name': 'InstanceId',
-                'Value': instance_id
+                'Value': instance.id
                 },
                 {
                 'Name': 'ImageId',
-                'Value': instance['Image ID']
+                'Value': instance.image_id
                 },
                 {
                 'Name': 'InstanceType',
-                'Value': instance['Type']
+                'Value': instance.instance_type
                 }
             ]
         )
-        for response in paginator.paginate(Dimensions=[{'Name': 'InstanceId', 'Value': instance_id},{'Name': 'fstype','Value': 'ext4'}],
+        for response in paginator.paginate(Dimensions=[{'Name': 'InstanceId', 'Value': instance.id},{'Name': 'fstype','Value': 'ext4'}],
                                     MetricName='disk_used_percent',
                                     Namespace='CWAgent'):
             for metrics in response['Metrics']:
                 cloudwatch.put_metric_alarm(
-                    AlarmName='%s_Disk_Utilization_%s' % (instance['Name'], metrics['Dimensions'][0]['Value']),
+                    AlarmName='%s_Disk_Utilization_%s' % (name, metrics['Dimensions'][0]['Value']),
                     ComparisonOperator='GreaterThanThreshold',
                     EvaluationPeriods=1,
                     MetricName='disk_used_percent',
@@ -103,7 +96,7 @@ for region in regions:
                     Dimensions=metrics['Dimensions']
                 )
                 cloudwatch.put_metric_alarm(
-                    AlarmName='%s_Disk_Inodes_Utilization_%s' % (instance['Name'], metrics['Dimensions'][0]['Value']),
+                    AlarmName='%s_Disk_Inodes_Utilization_%s' % (name, metrics['Dimensions'][0]['Value']),
                     ComparisonOperator='LessThanThreshold',
                     EvaluationPeriods=1,
                     MetricName='disk_inodes_free',
@@ -117,5 +110,6 @@ for region in regions:
                     Dimensions=metrics['Dimensions']
                 )
         
-        print("{0}: {1}".format('Name', instance['Name']))
+        print("{0}: {1}".format('Name', name))
         print("------")
+    
