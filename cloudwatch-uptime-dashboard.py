@@ -13,7 +13,7 @@ def _create_metric(metric_name, dashboard_type):
     health_check_response = route53_client.get_health_check(
         HealthCheckId=metric_name['Dimensions'][0]['Value']
     )
-    print(health_check_response['HealthCheck']['HealthCheckConfig']['FullyQualifiedDomainName'])
+    #print(health_check_response['HealthCheck']['HealthCheckConfig']['FullyQualifiedDomainName'])
     labeljson = {}
     labeljson["label"] = health_check_response['HealthCheck']['HealthCheckConfig']['FullyQualifiedDomainName']
     metric = []
@@ -51,8 +51,9 @@ def create_dashboard(dashboard_name, metric_names, dashboard_type):
             'title': f'{title}m',
             # multiple lambdas on each graph
             'metrics': metrics,
-            'period': 5 * 60,
-            'stat': 'Maximum',
+            'period': 300,
+            'stat': 'Average',
+            'view': 'singleValue',
             'region': os.getenv('AWS_DEFAULT_REGION', 'us-east-1')
         }
     }
