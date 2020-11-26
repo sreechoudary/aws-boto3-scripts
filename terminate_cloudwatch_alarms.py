@@ -29,7 +29,13 @@ def get_instance_name(instance):
 def delete_alarms_for_instance(instance_id):
   instance_name = get_instance_name(ec2.Instance(instance_id))
   logger.info("Deleting cloudwatch alarms for instance : " + instance_name)
-  response = cloudwatch.describe_alarms(AlarmNamePrefix = instance_name)
+  response = cloudwatch.describe_alarms(AlarmNamePrefix = instance_name, AlarmTypes=[
+        'CompositeAlarm','MetricAlarm',
+    ])
+  alarms = response['CompositeAlarms']
+  alarm_names = [alarm['AlarmName'] for alarm in alarms]
+  logger.info(alarm_names)
+  cloudwatch.delete_alarms(AlarmNames = alarm_names)
   alarms = response['MetricAlarms']
   alarm_names = [alarm['AlarmName'] for alarm in alarms]
   logger.info(alarm_names)
